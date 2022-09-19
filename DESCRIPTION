@@ -7,4 +7,5 @@ Maintainer: Roland Krasser <roland.krasser@gmail.com>
 Description: Run multiple SQL statements in multiple files
 License: What license is it under?
 Encoding: UTF-8
+Imports: DBI, readr, stringr
 LazyData: true

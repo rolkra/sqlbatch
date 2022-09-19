@@ -23,15 +23,15 @@ sql_read_file <- function(file) {
 
 sql_clean <- function(sql) {
   
-  sql <- str_replace_all(sql, "/\\*[\\w\\W]*?(?=\\*/)\\*/", "") ## remove /* */ comments (multi line)
-  sql <- str_replace_all(sql, "\r\n","\n")       ## remove CR
-  sql <- str_replace_all(sql, "--.+\n","\n")     ## remove -- comments
-  sql <- str_replace_all(sql, "--.+?$","\n")     ## remove -- comments at last line (no \n)
-  sql <- str_replace_all(sql, "\n+\n", "\n")     ## remove empty lines
-  sql <- str_replace_all(sql, "^\n+", "")        ## remove empty lines at beginning
-  sql <- str_replace_all(sql, "\\t", "    ")     ## replace tab with 4 space 
-  sql <- str_replace_all(sql, ";[ ]*$", "")      ## remove ending ;
-  sql <- str_replace_all(sql, ";[ ]*\n$", "")    ## remove ending ;\n
+  sql <- stringr::str_replace_all(sql, "/\\*[\\w\\W]*?(?=\\*/)\\*/", "") ## remove /* */ comments (multi line)
+  sql <- stringr::str_replace_all(sql, "\r\n","\n")       ## remove CR
+  sql <- stringr::str_replace_all(sql, "--.+\n","\n")     ## remove -- comments
+  sql <- stringr::str_replace_all(sql, "--.+?$","\n")     ## remove -- comments at last line (no \n)
+  sql <- stringr::str_replace_all(sql, "\n+\n", "\n")     ## remove empty lines
+  sql <- stringr::str_replace_all(sql, "^\n+", "")        ## remove empty lines at beginning
+  sql <- stringr::str_replace_all(sql, "\\t", "    ")     ## replace tab with 4 space 
+  sql <- stringr::str_replace_all(sql, ";[ ]*$", "")      ## remove ending ;
+  sql <- stringr::str_replace_all(sql, ";[ ]*\n$", "")    ## remove ending ;\n
   
   sql  
   
@@ -40,7 +40,7 @@ sql_clean <- function(sql) {
 sql_split <- function(sql) {
   
   sql_list <- unlist(str_split(sql,"(?<=;)"))
-  sql_list <- str_replace_all(sql_list, "^\n", "")
+  sql_list <- stringr::str_replace_all(sql_list, "^\n", "")
   sql_list
   
 }
@@ -75,8 +75,8 @@ sql_run <- function(con, sql = NA, file = NA, clean = FALSE) {
       sql <- sql_clean(sql) 
     }
     
-    sql_command <- str_extract(sql, "^[a-zA-Z]+[ ]")
-    sql_command <- str_to_upper(str_trim(sql_command))
+    sql_command <- stringr::str_extract(sql, "^[a-zA-Z]+[ ]")
+    sql_command <- stringr::str_to_upper(stringr::str_trim(sql_command))
     sql_command  
     
     if (is.na(sql_command))  {
