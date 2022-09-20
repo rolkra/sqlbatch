@@ -4,7 +4,7 @@
 \alias{sql_batch}
 \title{Run all SQL statement}
 \usage{
-sql_batch(con, sql = NA, file = NA, clean = FALSE)
+sql_batch(con, sql = NA, file = NA, clean = FALSE, simulate)
 }
 \arguments{
 \item{con}{Connection to a Database}
@@ -16,6 +16,8 @@ sql_batch(con, sql = NA, file = NA, clean = FALSE)
 
 \item{clean}{Cleaning SQL statement before execution?
 (dropping of empty line, dropping of comments, ...)}
+
+\item{simulate}{Just simulate, don't actually run SQL statement}
 }
 \value{
 data (if SQL contains a SELECT statement) otherwise NA

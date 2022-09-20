@@ -4,10 +4,12 @@
 \alias{sql_clean}
 \title{Clean SQL statement}
 \usage{
-sql_clean(sql)
+sql_clean(sql, safe = FALSE)
 }
 \arguments{
-\item{sql}{SQL statement}
+\item{sql}{SQL statement (or vector of SQL statements)}
+
+\item{safe}{Only clean parts of SQL that are save (no disruption)}
 }
 \value{
 SQL statement

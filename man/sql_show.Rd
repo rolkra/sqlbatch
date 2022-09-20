@@ -4,10 +4,12 @@
 \alias{sql_show}
 \title{Print SQL statement to console.}
 \usage{
-sql_show(sql)
+sql_show(sql, compress = FALSE)
 }
 \arguments{
 \item{sql}{SQL statement}
+
+\item{compress}{Compresses SQL to max. 80 characters}
 }
 \value{
 SQL statement

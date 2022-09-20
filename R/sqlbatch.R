@@ -1,14 +1,26 @@
 #' Print SQL statement to console.
 #'
 #' @param sql SQL statement
+#' @param compress Compresses SQL to max. 80 characters
 #' @return SQL statement
 #' @examples
 #' sql_show("SELECT * \nFROM mytable")
 #' @export
 
-sql_show <- function(sql) {
+sql_show <- function(sql, compress = FALSE) {
   
-  cat(sql)
+  if (compress) {
+    
+    sql <- sql_clean(sql, safe = TRUE)
+    sql <- stringr::str_replace_all(sql, "\n", " ")
+    
+    if (length(sql) > 80) {
+      sql <- paste(stringr::str_sub(sql, 1,74), "...")
+      
+    }
+  }
+  
+  cat(cli::col_silver(sql, "\n"))
   
 }
 
@@ -44,23 +56,31 @@ sql_read_file <- function(file) {
 
 #' Clean SQL statement
 #'
-#' @param sql SQL statement
+#' @param sql SQL statement (or vector of SQL statements)
+#' @param safe Only clean parts of SQL that are save (no disruption)
 #' @return SQL statement
 #' @examples
 #' sql_clean("\n\n-- Test\nSELECT * FROM mytable")
 #' @export
 
-sql_clean <- function(sql) {
+sql_clean <- function(sql, safe = FALSE) {
   
-  sql <- stringr::str_replace_all(sql, "/\\*[\\w\\W]*?(?=\\*/)\\*/", "") ## remove /* */ comments (multi line)
-  sql <- stringr::str_replace_all(sql, "\r\n","\n")       ## remove CR
-  sql <- stringr::str_replace_all(sql, "--.+\n","\n")     ## remove -- comments
-  sql <- stringr::str_replace_all(sql, "--.+?$","\n")     ## remove -- comments at last line (no \n)
-  sql <- stringr::str_replace_all(sql, "\n+\n", "\n")     ## remove empty lines
-  sql <- stringr::str_replace_all(sql, "^\n+", "")        ## remove empty lines at beginning
-  sql <- stringr::str_replace_all(sql, "\\t", "    ")     ## replace tab with 4 space 
-  sql <- stringr::str_replace_all(sql, ";[ ]*$", "")      ## remove ending ;
-  sql <- stringr::str_replace_all(sql, ";[ ]*\n$", "")    ## remove ending ;\n
+  # drop empty lines & tab, spaces at beginning and end
+  sql <- stringr::str_replace_all(sql, "^[;\\s\\t\r\n]*", "")
+  sql <- stringr::str_replace_all(sql, "[;\\s\\t\r\n]*$", "")
+  
+  # clean everything else
+  if (!safe) {
+    sql <- stringr::str_replace_all(sql, "/\\*[\\w\\W]*?(?=\\*/)\\*/", "") ## remove /* */ comments (multi line)
+    sql <- stringr::str_replace_all(sql, "\r\n","\n")       ## remove CR
+    sql <- stringr::str_replace_all(sql, "--.+\n","\n")     ## remove -- comments
+    sql <- stringr::str_replace_all(sql, "--.+?$","\n")     ## remove -- comments at last line (no \n)
+    sql <- stringr::str_replace_all(sql, "\n+\n", "\n")     ## remove empty lines
+    sql <- stringr::str_replace_all(sql, "^\n+", "")        ## remove empty lines at beginning
+    sql <- stringr::str_replace_all(sql, "\\t", "    ")     ## replace tab with 4 space 
+    sql <- stringr::str_replace_all(sql, ";[ ]*$", "")      ## remove ending ;
+    sql <- stringr::str_replace_all(sql, ";[ ]*\n$", "")    ## remove ending ;\n
+  }
   
   sql  
   
@@ -79,15 +99,23 @@ sql_clean <- function(sql) {
 
 sql_split <- function(sql) {
   
-  sql_list <- unlist(str_split(sql,"(?<=;)"))
-  sql_list <- stringr::str_replace_all(sql_list, "^\n", "")
-  sql_list
+  # split at semicolon
+  sql_list <- unlist(stringr::str_split(sql,"(?<=;)"))
   
+  # remove head & tail (space, tab, CR, new line, semicolon)
+  sql_list <- stringr::str_replace_all(sql_list, "^[;\\s\\t\r\n]*", "")
+  sql_list <- stringr::str_replace_all(sql_list, "[;\\s\\t\r\n]*$", "")
+  
+  # remove empty lines
+  sql_list <- sql_list[sql_list != ""]
+  
+  # return
+  sql_list
 }
 
 #' Run SQL statement
 #' 
-#' Runs all SQL statements in a file or in sql.
+#' Runs all SQL statements contained in a file or in a string (sql).
 #' If sql contains multiple statements separated by a semicolon
 #' all SQL statements are run in serial.
 #'
@@ -96,26 +124,49 @@ sql_split <- function(sql) {
 #' @param file Filename containing SQL statement
 #' @param clean Cleaning SQL statement before execution?
 #' (dropping of empty line, dropping of comments, ...)
+#' @param glue Use glue function to replace placeholders in SQL with 
+#' the value of global variables
+#' @param simulate Just simulate, don't actually run SQL statement
 #' @return data (if SQL contains a SELECT statement)
 #' @examples
 #' \dontrun{
+#' # run sql
 #' sql_run("SELECT * \nFROM mytable")
+#' 
+#' # run sql with glue
+#' sql_param_table <- "mytable"
+#' sql_run("SELECT * \nFROM {sql_param_table}")
+#' 
+#' # run sql with clean
+#' sql_run("-- Test \nSELECT * FROM mytable\n-- End\n", clean = TRUE)
+
+#' 
 #' }
 #' @export
 
-sql_run <- function(con, sql = NA, file = NA, clean = FALSE) {
+sql_run <- function(con, sql = NA, file = NA, clean = FALSE, glue = FALSE, 
+                    simulate = FALSE) {
   
   if (!all(is.na(file))) {
     cat("Reading SQL from", basename(file))
     sql <- sql_read_file(file)
   }
   
-  # clean and split sql
-  if (clean) { 
-    sql <- sql_clean(sql) 
+  # glue sql
+  if (glue) {
+    sql <- glue::glue(sql)
   }
+  
+  # clean and split sql
+  sql <- sql_clean(sql, safe = TRUE)
   sql_list <- sql_split(sql)
   
+  if (clean) { 
+    sql_list <- sql_clean(sql_list, safe = TRUE) 
+  } else {
+    sql_list <- sql_clean(sql_list, safe = FALSE)
+  }
+
   # init
   t1 <- Sys.time()
   data <- NA
@@ -129,13 +180,19 @@ sql_run <- function(con, sql = NA, file = NA, clean = FALSE) {
     
     cat(paste0(">> Part ", i, " of ", length(sql_list), ": "))
     sql <- sql_list[i]
+    
     if (clean) { 
-      sql <- sql_clean(sql) 
+      sql <- sql_clean(sql, safe = FALSE) 
+    } else {
+      sql <- sql_clean(sql, safe = TRUE)
     }
     
     sql_command <- stringr::str_extract(sql, "^[a-zA-Z]+[ ]")
     sql_command <- stringr::str_to_upper(stringr::str_trim(sql_command))
     sql_command  
+    
+    cat("\n")
+    sql_show(sql, compress = TRUE)
     
     if (is.na(sql_command))  {
       
@@ -144,7 +201,10 @@ sql_run <- function(con, sql = NA, file = NA, clean = FALSE) {
     } else if (sql_command == "SELECT") {
       
       cat("SELECT ... ")
-      data <- DBI::dbGetQuery(con, sql)
+      
+      if (!simulate) {
+         data <- DBI::dbGetQuery(con, sql)
+      } 
       
       if (is.data.frame(data)) {
         cat(nrow(data), "records\n")
@@ -155,13 +215,16 @@ sql_run <- function(con, sql = NA, file = NA, clean = FALSE) {
     } else if (sql_command == "DROP") {
       
       cat("DROP (silent) ...\n")
-      out <- try(DBI::dbExecute(con, sql), silent = TRUE)
+      if (!simulate) {
+         out <- try(DBI::dbExecute(con, sql), silent = TRUE)
+      }
       
     } else {
       
       cat(sql_command, "...\n")
-      DBI::dbExecute(con, sql)
-      
+      if (!simulate) {
+        DBI::dbExecute(con, sql)
+      }
     }
   } # for
   
@@ -189,6 +252,7 @@ sql_run <- function(con, sql = NA, file = NA, clean = FALSE) {
 #' @param file Vector of filename containing SQL statement
 #' @param clean Cleaning SQL statement before execution?
 #' (dropping of empty line, dropping of comments, ...)
+#' @param simulate Just simulate, don't actually run SQL statement
 #' @return data (if SQL contains a SELECT statement) otherwise NA
 #' @examples
 #' \dontrun{
@@ -196,7 +260,7 @@ sql_run <- function(con, sql = NA, file = NA, clean = FALSE) {
 #' }
 #' @export
 
-sql_batch <- function(con, sql = NA, file = NA, clean = FALSE)  {
+sql_batch <- function(con, sql = NA, file = NA, clean = FALSE, simulate)  {
   
   if (!is.na(file)) {
     cat("Reading", length(file), "files ...\n")
@@ -215,7 +279,7 @@ sql_batch <- function(con, sql = NA, file = NA, clean = FALSE)  {
       cat("> Run SQLs", i, "of", length(sql), "\n")
     }
     
-    result <- sql_run(con, sql = sql[i], clean = clean)
+    result <- sql_run(con, sql = sql[i], clean = clean, simulate = simulate)
     
   } # for
   
