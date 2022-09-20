@@ -1,9 +1,30 @@
+#' Print SQL statement to console.
+#'
+#' @param sql SQL statement
+#' @return SQL statement
+#' @examples
+#' sql_show("SELECT * \nFROM mytable")
+#' @export
+
 sql_show <- function(sql) {
   
   cat(sql)
   
 }
 
+#' Read SQL from a file
+#'
+#' Reading SQL statements from a text-file. 
+#' The file may contain a single SQL or multiple SQL separated by semicolon
+#'
+#' @param file path and filename
+#' @return SQL statement
+#' @examples
+#' \dontrun{
+#' sql <- sql_read_file("C:/temp/demo.sql")
+#' }
+#' @export
+#' 
 sql_read_file <- function(file) {
   
   if (!is.vector(file)) {
@@ -21,6 +42,14 @@ sql_read_file <- function(file) {
   }
 } # sql_read_file
 
+#' Clean SQL statement
+#'
+#' @param sql SQL statement
+#' @return SQL statement
+#' @examples
+#' sql_clean("\n\n-- Test\nSELECT * FROM mytable")
+#' @export
+
 sql_clean <- function(sql) {
   
   sql <- stringr::str_replace_all(sql, "/\\*[\\w\\W]*?(?=\\*/)\\*/", "") ## remove /* */ comments (multi line)
@@ -37,6 +66,17 @@ sql_clean <- function(sql) {
   
 } # sql_clean
 
+#' Split SQL statement
+#' 
+#' Splits SQL containing multiple statements separated by a semicolon
+#' into a vector of single SQL statements.
+#'
+#' @param sql SQL statement
+#' @return Vector of SQL statements
+#' @examples
+#' sql_show("SELECT * \nFROM mytable")
+#' @export
+
 sql_split <- function(sql) {
   
   sql_list <- unlist(str_split(sql,"(?<=;)"))
@@ -44,6 +84,24 @@ sql_split <- function(sql) {
   sql_list
   
 }
+
+#' Run SQL statement
+#' 
+#' Runs all SQL statements in a file or in sql.
+#' If sql contains multiple statements separated by a semicolon
+#' all SQL statements are run in serial.
+#'
+#' @param con Connection to a Database
+#' @param sql SQL statement
+#' @param file Filename containing SQL statement
+#' @param clean Cleaning SQL statement before execution?
+#' (dropping of empty line, dropping of comments, ...)
+#' @return data (if SQL contains a SELECT statement)
+#' @examples
+#' \dontrun{
+#' sql_run("SELECT * \nFROM mytable")
+#' }
+#' @export
 
 sql_run <- function(con, sql = NA, file = NA, clean = FALSE) {
   
@@ -118,6 +176,25 @@ sql_run <- function(con, sql = NA, file = NA, clean = FALSE) {
   data
   
 } # sql_run
+
+#' Run all SQL statement
+#' 
+#' Runs all SQL statements in a vector of files or in a vectot of strings.
+#' If sql contains multiple statements separated by a semicolon
+#' all SQL statements are run in serial.
+#'
+#' @param con Connection to a Database
+#' @param sql Vector of strings containing SQL statements 
+#' (either single statements or multiple statements separated by a semicolon)
+#' @param file Vector of filename containing SQL statement
+#' @param clean Cleaning SQL statement before execution?
+#' (dropping of empty line, dropping of comments, ...)
+#' @return data (if SQL contains a SELECT statement) otherwise NA
+#' @examples
+#' \dontrun{
+#' sql_run("SELECT * \nFROM mytable")
+#' }
+#' @export
 
 sql_batch <- function(con, sql = NA, file = NA, clean = FALSE)  {
   

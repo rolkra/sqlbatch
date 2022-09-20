@@ -1,6 +1,6 @@
 Package: sqlbatch
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Batch SQL Statements
 Version: 1.0.0
 Author: Roland Krasser
 Maintainer: Roland Krasser <roland.krasser@gmail.com>
@@ -9,3 +9,4 @@ License: What license is it under?
 Encoding: UTF-8
 Imports: DBI, readr, stringr
 LazyData: true
+RoxygenNote: 7.1.2
