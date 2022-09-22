@@ -4,7 +4,7 @@
 \alias{sql_batch}
 \title{Run all SQL statement}
 \usage{
-sql_batch(con, sql = NA, file = NA, clean = FALSE, simulate)
+sql_batch(con, sql = NA, file = NA, clean = FALSE, simulate = FALSE)
 }
 \arguments{
 \item{con}{Connection to a Database}

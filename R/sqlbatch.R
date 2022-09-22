@@ -65,9 +65,26 @@ sql_read_file <- function(file) {
 
 sql_clean <- function(sql, safe = FALSE) {
   
-  # drop empty lines & tab, spaces at beginning and end
-  sql <- stringr::str_replace_all(sql, "^[;\\s\\t\r\n]*", "")
-  sql <- stringr::str_replace_all(sql, "[;\\s\\t\r\n]*$", "")
+  done <- FALSE
+  
+  
+  while (!done)  {
+    
+    sql_before <- sql
+    
+    # drop empty lines & tab, spaces at beginning and end
+    sql <- stringr::str_replace_all(sql, "^[;\\s\\t\r\n]*", "")
+    sql <- stringr::str_replace_all(sql, "[;\\s\\t\r\n]*$", "")
+    
+    # drop comment at beginning
+    sql <- stringr::str_replace_all(sql, "^--.+\n","")
+    sql <- stringr::str_replace_all(sql, "^/\\*[\\w\\W]*?(?=\\*/)\\*/", "")
+  
+    if (sql == sql_before) { 
+      done <- TRUE 
+    }
+    
+  } # while
   
   # clean everything else
   if (!safe) {
@@ -146,6 +163,10 @@ sql_split <- function(sql) {
 
 sql_run <- function(con, sql = NA, file = NA, clean = FALSE, glue = FALSE, 
                     simulate = FALSE) {
+  
+  if (all(is.na(sql)) & all(is.na(sql))) {
+    stop("Either sql or file must be defined")
+  }
   
   if (!all(is.na(file))) {
     cat("Reading SQL from", basename(file))
@@ -260,8 +281,12 @@ sql_run <- function(con, sql = NA, file = NA, clean = FALSE, glue = FALSE,
 #' }
 #' @export
 
-sql_batch <- function(con, sql = NA, file = NA, clean = FALSE, simulate)  {
-  
+sql_batch <- function(con, sql = NA, file = NA, clean = FALSE, simulate = FALSE)  {
+
+  if (all(is.na(sql)) & all(is.na(sql))) {
+    stop("Either sql or file must be defined")
+  }
+
   if (!is.na(file)) {
     cat("Reading", length(file), "files ...\n")
     sql <- sql_read_file(file)
